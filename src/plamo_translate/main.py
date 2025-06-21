@@ -61,7 +61,7 @@ def wait_for_server_ready() -> None:
 
 
 async def print_translation(
-    client: translate.MCPClient, messages: List[Dict[str, str]], stream: bool
+    client, messages: List[Dict[str, str]], stream: bool
 ) -> List[Dict[str, str]]:
     async for result in client.translate(messages):
         if not stream:
@@ -93,20 +93,40 @@ def run_translate(args: argparse.Namespace) -> None:
 
     messages: List[Dict[str, str]] = []
 
-    if not check_server_running():
-        if args.interactive:
-            show_progress = True
+    # Check if we should use HTTP client
+    http_server = args.http_server or os.environ.get("PLAMO_HTTP_SERVER")
+    if http_server:
+        # Parse host:port
+        if ":" in http_server:
+            host, port_str = http_server.split(":", 1)
+            port = int(port_str)
         else:
-            show_progress = False
-        server = multiprocessing.Process(
-            target=start_mcp_server,
-            args=(backend_type, "CRITICAL", show_progress),
-            daemon=True,
-        )
-        server.start()
-        wait_for_server_ready()
+            host = http_server
+            port = 8080
+        
+        from plamo_translate.clients.http_client import HTTPClient
+        client = HTTPClient(host=host, port=port, stream=stream)
+        
+        # Check if HTTP server is available
+        if not asyncio.run(client.check_health()):
+            print(f"Error: HTTP server at {host}:{port} is not available or model not loaded", file=sys.stderr)
+            sys.exit(1)
+    else:
+        # Use local MCP server
+        if not check_server_running():
+            if args.interactive:
+                show_progress = True
+            else:
+                show_progress = False
+            server = multiprocessing.Process(
+                target=start_mcp_server,
+                args=(backend_type, "CRITICAL", show_progress),
+                daemon=True,
+            )
+            server.start()
+            wait_for_server_ready()
 
-    client = translate.MCPClient(stream=stream)
+        client = translate.MCPClient(stream=stream)
 
     try:
         if args.interactive:
@@ -227,12 +247,21 @@ def main() -> None:
         action="store_true",
         help="Enable interactive mode for translation",
     )
+    global_parser.add_argument(
+        "--http-server",
+        type=str,
+        help="Use HTTP server at HOST:PORT instead of local MCP server (e.g., localhost:8080). Can also be set via PLAMO_HTTP_SERVER environment variable.",
+        default=None,
+    )
 
     # Create the parser for the "server" command
     parser = argparse.ArgumentParser(description="PLaMo Translate CLI", parents=[global_parser])
 
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
     _ = subparsers.add_parser("server", help="Run the server", parents=[global_parser])
+    http_server_parser = subparsers.add_parser("http-server", help="Run the HTTP server", parents=[global_parser])
+    http_server_parser.add_argument("--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)")
+    http_server_parser.add_argument("--port", type=int, default=8080, help="Port to bind to (default: 8080)")
     _ = subparsers.add_parser(
         "show-claude-config", help="Show the MCP server config for Claude Desktop", parents=[global_parser]
     )
@@ -296,6 +325,28 @@ def main() -> None:
                 break
             except Exception as e:
                 logger.error(f"An error occurred: {str(e)}: {e}. Restarting server...")
+
+    elif args.command == "http-server":
+        logging.basicConfig(level=logging.INFO)
+        from plamo_translate.servers.http_server import PLaMoHTTPServer
+        
+        # Set model configuration
+        if args.backend_type == "mlx":
+            if args.precision == "4bit":
+                model_name = "mlx-community/plamo-2-translate"
+            elif args.precision == "8bit":
+                model_name = "mlx-community/plamo-2-translate-8bit"
+            elif args.precision == "bf16":
+                model_name = "mlx-community/plamo-2-translate-bf16"
+        
+        if "PLAMO_TRANSLATE_CLI_MODEL_NAME" not in os.environ:
+            os.environ["PLAMO_TRANSLATE_CLI_MODEL_NAME"] = model_name
+        
+        server = PLaMoHTTPServer(host=args.host, port=args.port)
+        try:
+            server.run()
+        except KeyboardInterrupt:
+            logger.info("\nHTTP server stopped by user (Ctrl+C).")
 
     elif args.command == "show-claude-config":
         cmd = subprocess.run(["which", "npx"], check=True, capture_output=True, text=True)
