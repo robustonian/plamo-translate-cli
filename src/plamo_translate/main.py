@@ -94,14 +94,14 @@ def run_translate(args: argparse.Namespace) -> None:
     messages: List[Dict[str, str]] = []
 
     # Check if we should use HTTP client
-    http_server = args.http_server or os.environ.get("PLAMO_HTTP_SERVER")
-    if http_server:
+    http_server_setting = args.http_server or os.environ.get("PLAMO_HTTP_SERVER")
+    if http_server_setting:
         # Parse host:port
-        if ":" in http_server:
-            host, port_str = http_server.split(":", 1)
+        if ":" in http_server_setting:
+            host, port_str = http_server_setting.split(":", 1)
             port = int(port_str)
         else:
-            host = http_server
+            host = http_server_setting
             port = 8080
         
         from plamo_translate.clients.http_client import HTTPClient
@@ -294,18 +294,21 @@ def main() -> None:
         os.environ["PLAMO_TRANSLATE_CLI_SERVER_LOG_LEVEL"] = "CRITICAL"
 
     args.stream = not args.no_stream
-    if args.backend_type == "mlx":
-        if args.precision == "4bit":
-            model_name = "mlx-community/plamo-2-translate"
-        elif args.precision == "8bit":
-            model_name = "mlx-community/plamo-2-translate-8bit"
-        elif args.precision == "bf16":
-            model_name = "mlx-community/plamo-2-translate-bf16"
+    # Only set model configuration if not using HTTP server
+    http_server = args.http_server or os.environ.get("PLAMO_HTTP_SERVER")
+    if not http_server:
+        if args.backend_type == "mlx":
+            if args.precision == "4bit":
+                model_name = "mlx-community/plamo-2-translate"
+            elif args.precision == "8bit":
+                model_name = "mlx-community/plamo-2-translate-8bit"
+            elif args.precision == "bf16":
+                model_name = "mlx-community/plamo-2-translate-bf16"
 
-    update_config(backend_type=args.backend_type, model_name=model_name)
+        update_config(backend_type=args.backend_type, model_name=model_name)
 
-    if "PLAMO_TRANSLATE_CLI_MODEL_NAME" not in os.environ:
-        os.environ["PLAMO_TRANSLATE_CLI_MODEL_NAME"] = model_name
+        if "PLAMO_TRANSLATE_CLI_MODEL_NAME" not in os.environ:
+            os.environ["PLAMO_TRANSLATE_CLI_MODEL_NAME"] = model_name
 
     if args.command == "server":
         logging.basicConfig(level=logging.INFO)

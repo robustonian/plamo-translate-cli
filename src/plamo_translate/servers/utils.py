@@ -127,9 +127,9 @@ def find_free_port(
 
 
 def update_config(**kwargs) -> Dict[str, Any]:
-    tmp_dir = os.environ.get("TMPDIR", None)
-    if tmp_dir is None:
-        raise ValueError("TMPDIR environment variable is not set. Please set it to a valid directory.")
+    # Use platform-appropriate temporary directory
+    import tempfile
+    tmp_dir = os.environ.get("TMPDIR") or os.environ.get("TMP") or os.environ.get("TEMP") or tempfile.gettempdir()
     tmp_config_path = Path(tmp_dir) / "plamo-translate-config.json"
 
     if not tmp_config_path.exists():
