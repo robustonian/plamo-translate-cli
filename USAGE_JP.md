@@ -215,6 +215,28 @@ export PLAMO_TRANSLATE_CLI_TEMP=0.1
 export PLAMO_TRANSLATE_CLI_TOP_P=0.95
 ```
 
+### Ubuntu/Linux環境での便利な設定
+
+Ubuntu等のLinux環境でuvを使用している場合、以下の設定を`~/.bashrc`や`~/.zshrc`に追加すると便利です：
+
+```bash
+# ~/.bashrcまたは~/.zshrcに追加
+export PLAMO_HTTP_SERVER=mac:9000  # Macサーバーのアドレスに変更
+alias plamo-translate='uv run plamo-translate'
+
+# 設定を反映
+source ~/.bashrc  # または source ~/.zshrc
+```
+
+この設定により、以下のようにシンプルに使用できます：
+
+```bash
+# 短縮形で使用可能
+plamo-translate --input '家計は火の車だ'
+echo '家計は火の車だ' | plamo-translate
+plamo-translate --interactive
+```
+
 ## 使用例
 
 ### 1. 日常的な翻訳作業
