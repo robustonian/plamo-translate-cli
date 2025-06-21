@@ -39,6 +39,8 @@ dependencies = [
     "mcp[cli]>=1.9.2",
     "numba>=0.60.0",
     "mlx-lm>=0.25.2 ; sys_platform == 'darwin'",
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
 ]
 
 [tool.uv]
@@ -59,6 +61,7 @@ compress-level = 0
 
 [project.scripts]
 plamo-translate = "plamo_translate.main:main"
+plamo-translate-http = "plamo_translate.servers.http_server:main"
 
 [tool.ruff]
 line-length = 120
