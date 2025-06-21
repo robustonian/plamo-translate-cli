@@ -69,7 +69,9 @@ async def print_translation(
         else:
             messages[-1]["content"] += result
             print(result, end="", flush=True)
-
+    
+    # Add newline at the end for better terminal display
+    print()
     return messages
 
 
