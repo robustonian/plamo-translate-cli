@@ -316,3 +316,6 @@ plamo-translate show-claude-config
 ## まとめ
 
 PLaMo Translate CLIは、シンプルなコマンドライン翻訳から、ネットワーク経由でのマルチマシン翻訳環境まで、様々な用途に対応できる柔軟な翻訳ツールです。開発作業、文書翻訳、多言語環境でのコミュニケーション支援など、幅広い場面で活用できます。
+
+## 使い方メモ
+* [plamo-translate-cliコマンドをUbuntuで使いたい](https://zenn.dev/robustonian/scraps/b98b74938567c5)
