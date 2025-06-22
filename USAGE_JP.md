@@ -221,8 +221,8 @@ Ubuntu等のLinux環境でuvを使用している場合、以下の設定を`~/.
 
 ```bash
 # ~/.bashrcまたは~/.zshrcに追加
-export PLAMO_HTTP_SERVER=mac:9000  # Macサーバーのアドレスに変更
-alias plamo-translate='uv run plamo-translate'
+export PLAMO_HTTP_SERVER=192.168.xx.xx:9000  # Macサーバーのアドレスに変更
+alias plamo-translate='/path/to/plamo-translate-cli/.venv/bin/plamo-translate'
 
 # 設定を反映
 source ~/.bashrc  # または source ~/.zshrc
